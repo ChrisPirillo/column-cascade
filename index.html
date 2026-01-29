@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- SEO & Identity -->
+    <title>Column Cascade | Neural Geometry Visualizer</title>
+    <meta name="description" content="Column Cascade, a high-performance neural geometry visualizer. Explore infinite fractal columns, procedural distortions, and real-time WebGL art.">
+    <meta name="keywords" content="Column Cascade, generative art, WebGL, fractal visualizer, neural geometry, interactive art, 4K wallpaper generator, procedural textures">
+    <link rel="canonical" href="https://pirillo.com/arcade/column-cascade.html">
+    <meta name="author" content="Chris Pirillo">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://pirillo.com/arcade/column-cascade.html">
+    <meta property="og:title" content="Column Cascade | Neural Geometry Visualizer">
+    <meta property="og:description" content="An infinite journey through procedurally generated neural architecture. Customize speed, distortion, and glow in real-time.">
+    <meta property="og:image" content="https://pirillo.com/arcade/images/column-cascade.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ChrisPirillo">
+    <meta name="twitter:creator" content="@ChrisPirillo">
+    <meta name="twitter:title" content="Column Cascade | Neural Geometry Visualizer">
+    <meta name="twitter:description" content="Explore procedural fractal geometries with Chris Pirillo's Column Cascade. Real-time WebGL visuals and 4K export.">
+    <meta name="twitter:image" content="https://pirillo.com/arcade/images/column-cascade.png">
+
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-1CQ4D3VQ3L"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-1CQ4D3VQ3L');
+    </script>
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Column Cascade",
+      "description": "An interactive WebGL neural geometry visualizer for generating infinite fractal patterns.",
+      "url": "https://pirillo.com/arcade/column-cascade.html",
+      "author": {
+        "@type": "Person",
+        "name": "Chris Pirillo",
+        "url": "https://pirillo.com"
+      },
+      "image": "https://pirillo.com/arcade/images/column-cascade.png"
+    }
+    </script>
+
+    <style>
+        :root {
+            --bg-color: #000;
+            --ui-bg: rgba(20, 20, 20, 0.85);
+            --ui-border: rgba(255, 255, 255, 0.1);
+            --accent: #00ffcc;
+            --text-main: #eee;
+            --text-sub: #aaa;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: var(--font-family);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Screen Reader Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #transition-curtain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        #menu-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--ui-bg);
+            border: 1px solid var(--ui-border);
+            border-radius: 50%;
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            transition: transform 0.2s ease, background 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        #menu-btn:hover {
+            transform: scale(1.05);
+            background: rgba(40, 40, 40, 0.9);
+        }
+
+        #menu-btn span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background-color: var(--text-main);
+            border-radius: 2px;
+            transition: transform 0.3s ease, opacity 0.3s;
+        }
+
+        #menu-btn.open span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+        #menu-btn.open span:nth-child(2) {
+            opacity: 0;
+        }
+        #menu-btn.open span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        #settings-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 320px;
+            height: 100%;
+            background: var(--ui-bg);
+            backdrop-filter: blur(15px);
+            border-left: 1px solid var(--ui-border);
+            z-index: 10;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            padding: 80px 20px 20px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        #settings-panel.active {
+            transform: translateX(0);
+        }
+
+        h2 {
+            color: var(--text-main);
+            font-size: 1.2rem;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--ui-border);
+            padding-bottom: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 30px;
+            border-radius: 4px;
+            background: none;
+            cursor: pointer;
+        }
+        
+        input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--ui-border);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--accent);
+        }
+
+        button.primary {
+            background: rgba(0, 255, 204, 0.1);
+            border-color: rgba(0, 255, 204, 0.3);
+            color: var(--accent);
+            grid-column: span 2;
+        }
+
+        button.primary:hover {
+            background: rgba(0, 255, 204, 0.2);
+        }
+
+        .value-display {
+            font-family: monospace;
+            color: var(--accent);
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--ui-bg);
+            border: 1px solid var(--accent);
+            color: var(--text-main);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            z-index: 50;
+        }
+        
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 480px) {
+            #settings-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="sr-only">Column Cascade - Neural Geometry Visualizer by Chris Pirillo</h1>
+
+    <canvas id="glCanvas" aria-label="Interactive neural geometry visualization"></canvas>
+    <div id="transition-curtain"></div>
+
+    <nav aria-label="Main Menu">
+        <button id="menu-btn" aria-label="Toggle Configuration Menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </nav>
+
+    <main id="settings-panel" aria-labelledby="config-title">
+        <h2 id="config-title">Configuration</h2>
+
+        <div class="control-group">
+            <button class="primary" id="btn-randomize">Randomize View</button>
+        </div>
+
+        <div class="control-group">
+            <label for="check-auto">Auto Advance <input type="checkbox" id="check-auto"></label>
+        </div>
+        
+        <div class="control-group">
+            <label for="inp-interval">Interval (sec) <span id="val-interval" class="value-display">5</span></label>
+            <input type="range" id="inp-interval" min="2" max="20" step="1" value="5">
+        </div>
+
+        <h2>Parameters</h2>
+        
+        <div class="control-group">
+            <label for="inp-color">Base Color</label>
+            <input type="color" id="inp-color" value="#00ffcc">
+        </div>
+
+        <div class="control-group">
+            <label for="inp-speed">Speed <span id="val-speed" class="value-display">1.0</span></label>
+            <input type="range" id="inp-speed" min="0" max="3" step="0.1" value="1.0">
+        </div>
+
+        <div class="control-group">
+            <label for="inp-geo1">Geometry Scale <span id="val-geo1" class="value-display">0.2</span></label>
+            <input type="range" id="inp-geo1" min="0.1" max="0.2" step="0.01" value="0.2">
+        </div>
+
+        <div class="control-group">
+            <label for="inp-geo2">Geometry Thickness <span id="val-geo2" class="value-display">0.3</span></label>
+            <input type="range" id="inp-geo2" min="0.25" max="0.9" step="0.01" value="0.3">
+        </div>
+
+        <div class="control-group">
+            <label for="inp-dist">Distortion <span id="val-dist" class="value-display">0.02</span></label>
+            <input type="range" id="inp-dist" min="0.0" max="0.1" step="0.001" value="0.02">
+        </div>
+        
+        <div class="control-group">
+            <label for="inp-glow">Glow Intensity <span id="val-glow" class="value-display">10</span></label>
+            <input type="range" id="inp-glow" min="1" max="12.5" step="0.5" value="10">
+        </div>
+
+        <div class="control-group">
+            <label for="inp-detail">Fractal Detail <span id="val-detail" class="value-display">9</span></label>
+            <input type="range" id="inp-detail" min="1" max="9" step="1" value="9">
+        </div>
+
+        <h2>System</h2>
+        <div class="button-row">
+            <button id="btn-reset">Reset</button>
+            <button id="btn-export">Export 4K</button>
+        </div>
+        <footer style="font-size: 0.7rem; color: #666; text-align: center; margin-top: 20px;">
+            <p>Click anywhere to Randomize when menu is closed.</p>
+            <p>&copy; Chris Pirillo</p>
+        </footer>
+    </main>
+
+    <div id="toast" role="status" aria-live="polite">Snapshot Saved!</div>
+
+    <script>
+        /**
+         * Core Logic & WebGL Setup
+         */
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl');
+        const overlay = document.getElementById('transition-curtain');
+        const toast = document.getElementById('toast');
+
+        if (!gl) {
+            console.error('WebGL not supported');
+        }
+
+        // --- Shader Source ---
+        const vsSource = `
+            attribute vec4 aVertexPosition;
+            void main() {
+                gl_Position = aVertexPosition;
+            }
+        `;
+
+        const fsSource = `
+            precision highp float;
+            uniform vec2 uResolution;
+            uniform float uTime;
+            uniform vec3 uColor;
+            uniform float uGeo1;
+            uniform float uGeo2;
+            uniform float uDistortion;
+            uniform float uDetail;
+            uniform float uGlow;
+            
+            mat2 rotate2D(float r) {
+                return mat2(cos(r), sin(r), -sin(r), cos(r));
+            }
+
+            void main() {
+                vec2 r = uResolution;
+                vec2 FC = gl_FragCoord.xy;
+                float t = uTime;
+
+                vec3 P = vec3(sin(t*3.14159/4.0-0.7)*0.7, 0.0, t*0.5);
+                vec3 Q, U = vec3(1.0);
+                
+                float i = 0.0;
+                float d = 1.0;
+                float a;
+                
+                vec3 rd = normalize(vec3(FC.xy - r * 0.5, r.y));
+
+                for (float k = 0.0; k < 99.0; k++) {
+                    if (d <= 0.0001) break;
+                    i = k;
+                    
+                    d = min(length(fract(P.xz)-0.5)-uGeo1, uGeo2-abs(P.y-uGeo1));
+
+                    a = 1.0;
+                    for (int j = 0; j < 9; j++) {
+                        if (float(j) >= uDetail) break;
+                        a += a;
+                        Q = P * a * 9.0;
+                        Q.yz *= rotate2D(a);
+                        d += abs(dot(sin(Q), U)) / a * uDistortion;
+                    }
+                    
+                    P += rd * d * 0.6;
+                }
+
+                vec3 col = vec3(uGlow / i);
+                col *= uColor; 
+                col = pow(col, vec3(0.4545)); 
+
+                gl_FragColor = vec4(col, 1.0);
+            }
+        `;
+
+        // --- WebGL Boilerplate ---
+        function initShaderProgram(gl, vsSource, fsSource) {
+            const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
+            const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+            const shaderProgram = gl.createProgram();
+            gl.attachShader(shaderProgram, vertexShader);
+            gl.attachShader(shaderProgram, fragmentShader);
+            gl.linkProgram(shaderProgram);
+            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+                console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+                return null;
+            }
+            return shaderProgram;
+        }
+
+        function loadShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+        const programInfo = {
+            program: shaderProgram,
+            attribLocations: {
+                vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+            },
+            uniformLocations: {
+                uResolution: gl.getUniformLocation(shaderProgram, 'uResolution'),
+                uTime: gl.getUniformLocation(shaderProgram, 'uTime'),
+                uColor: gl.getUniformLocation(shaderProgram, 'uColor'),
+                uGeo1: gl.getUniformLocation(shaderProgram, 'uGeo1'),
+                uGeo2: gl.getUniformLocation(shaderProgram, 'uGeo2'),
+                uDistortion: gl.getUniformLocation(shaderProgram, 'uDistortion'),
+                uDetail: gl.getUniformLocation(shaderProgram, 'uDetail'),
+                uGlow: gl.getUniformLocation(shaderProgram, 'uGlow'),
+            },
+        };
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        const positions = [-1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, -1.0];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+        const state = {
+            startTime: Date.now(),
+            currentTime: 0,
+            speed: 1.0,
+            color: [0.0, 1.0, 0.8], 
+            geo1: 0.2,
+            geo2: 0.3,
+            distortion: 0.02,
+            glow: 15.0,
+            detail: 9.0,
+            autoAdvance: false,
+            autoInterval: 5000,
+            lastAutoTime: 0
+        };
+
+        function render(now) {
+            const timeInSeconds = (now * 0.001) * state.speed;
+            
+            if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+
+            if (state.autoAdvance && now - state.lastAutoTime > state.autoInterval) {
+                triggerRandomization();
+                state.lastAutoTime = now;
+            }
+
+            gl.useProgram(programInfo.program);
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+
+            gl.uniform2f(programInfo.uniformLocations.uResolution, canvas.width, canvas.height);
+            gl.uniform1f(programInfo.uniformLocations.uTime, timeInSeconds);
+            gl.uniform3f(programInfo.uniformLocations.uColor, state.color[0], state.color[1], state.color[2]);
+            gl.uniform1f(programInfo.uniformLocations.uGeo1, state.geo1);
+            gl.uniform1f(programInfo.uniformLocations.uGeo2, state.geo2);
+            gl.uniform1f(programInfo.uniformLocations.uDistortion, state.distortion);
+            gl.uniform1f(programInfo.uniformLocations.uDetail, state.detail);
+            gl.uniform1f(programInfo.uniformLocations.uGlow, state.glow);
+
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+            requestAnimationFrame(render);
+        }
+
+        const menuBtn = document.getElementById('menu-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        
+        const inputs = {
+            color: document.getElementById('inp-color'),
+            speed: document.getElementById('inp-speed'),
+            geo1: document.getElementById('inp-geo1'),
+            geo2: document.getElementById('inp-geo2'),
+            dist: document.getElementById('inp-dist'),
+            glow: document.getElementById('inp-glow'),
+            detail: document.getElementById('inp-detail'),
+            auto: document.getElementById('check-auto'),
+            interval: document.getElementById('inp-interval')
+        };
+
+        const values = {
+            speed: document.getElementById('val-speed'),
+            geo1: document.getElementById('val-geo1'),
+            geo2: document.getElementById('val-geo2'),
+            dist: document.getElementById('val-dist'),
+            glow: document.getElementById('val-glow'),
+            detail: document.getElementById('val-detail'),
+            interval: document.getElementById('val-interval')
+        };
+
+        let menuOpen = false;
+
+        function toggleMenu() {
+            menuOpen = !menuOpen;
+            if (menuOpen) {
+                menuBtn.classList.add('open');
+                menuBtn.setAttribute('aria-expanded', 'true');
+                settingsPanel.classList.add('active');
+            } else {
+                menuBtn.classList.remove('open');
+                menuBtn.setAttribute('aria-expanded', 'false');
+                settingsPanel.classList.remove('active');
+            }
+        }
+
+        function closeMenu() {
+            menuOpen = false;
+            menuBtn.classList.remove('open');
+            menuBtn.setAttribute('aria-expanded', 'false');
+            settingsPanel.classList.remove('active');
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16) / 255,
+                parseInt(result[2], 16) / 255,
+                parseInt(result[3], 16) / 255
+            ] : [0, 1, 1];
+        }
+
+        function rgbToHex(r, g, b) {
+            const toHex = (c) => {
+                const hex = Math.round(c * 255).toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+            };
+            return "#" + toHex(r) + toHex(g) + toHex(b);
+        }
+
+        function updateStateFromUI() {
+            state.speed = parseFloat(inputs.speed.value);
+            state.geo1 = parseFloat(inputs.geo1.value);
+            state.geo2 = parseFloat(inputs.geo2.value);
+            state.distortion = parseFloat(inputs.dist.value);
+            state.glow = parseFloat(inputs.glow.value);
+            state.detail = parseFloat(inputs.detail.value);
+            state.color = hexToRgb(inputs.color.value);
+            state.autoAdvance = inputs.auto.checked;
+            state.autoInterval = parseInt(inputs.interval.value) * 1000;
+
+            values.speed.textContent = state.speed.toFixed(1);
+            values.geo1.textContent = state.geo1.toFixed(2);
+            values.geo2.textContent = state.geo2.toFixed(2);
+            values.dist.textContent = state.distortion.toFixed(3);
+            values.glow.textContent = state.glow.toFixed(1);
+            values.detail.textContent = state.detail;
+            values.interval.textContent = inputs.interval.value;
+        }
+
+        function updateUIFromState() {
+            inputs.speed.value = state.speed;
+            inputs.geo1.value = state.geo1;
+            inputs.geo2.value = state.geo2;
+            inputs.dist.value = state.distortion;
+            inputs.glow.value = state.glow;
+            inputs.detail.value = state.detail;
+            inputs.color.value = rgbToHex(state.color[0], state.color[1], state.color[2]);
+            
+            updateStateFromUI();
+        }
+
+        function triggerRandomization() {
+            overlay.style.opacity = '1';
+
+            setTimeout(() => {
+                state.speed = 0.2 + Math.random() * 2.0;
+                state.geo1 = 0.1 + Math.random() * 0.1; 
+                state.geo2 = 0.25 + Math.random() * 0.25; 
+                state.distortion = Math.random() * 0.05; 
+                state.glow = 2.0 + Math.random() * 10.5; 
+                state.detail = Math.floor(4 + Math.random() * 6); 
+                
+                const r = Math.random();
+                const g = Math.random();
+                const b = Math.random();
+                const max = Math.max(r, g, b);
+                state.color = [r/max, g/max, b/max];
+
+                updateUIFromState();
+
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                }, 200);
+            }, 400); 
+        }
+
+        function resetToDefaults() {
+            state.speed = 1.0;
+            state.geo1 = 0.2;
+            state.geo2 = 0.3;
+            state.distortion = 0.02;
+            state.glow = 10.0;
+            state.detail = 9.0;
+            state.color = [0.0, 1.0, 0.8];
+            updateUIFromState();
+        }
+
+        function exportWallpaper() {
+            const originalWidth = canvas.width;
+            const originalHeight = canvas.height;
+            
+            canvas.width = 3840;
+            canvas.height = 2160;
+            gl.viewport(0, 0, 3840, 2160);
+
+            gl.useProgram(programInfo.program);
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+            
+            const now = performance.now();
+            const timeInSeconds = (now * 0.001) * state.speed;
+            gl.uniform2f(programInfo.uniformLocations.uResolution, 3840, 2160);
+            gl.uniform1f(programInfo.uniformLocations.uTime, timeInSeconds);
+            gl.uniform3f(programInfo.uniformLocations.uColor, state.color[0], state.color[1], state.color[2]);
+            gl.uniform1f(programInfo.uniformLocations.uGeo1, state.geo1);
+            gl.uniform1f(programInfo.uniformLocations.uGeo2, state.geo2);
+            gl.uniform1f(programInfo.uniformLocations.uDistortion, state.distortion);
+            gl.uniform1f(programInfo.uniformLocations.uDetail, state.detail);
+            gl.uniform1f(programInfo.uniformLocations.uGlow, state.glow);
+            
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+            try {
+                const dataURL = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = 'column-cascade-' + Date.now() + '.png';
+                link.href = dataURL;
+                link.click();
+                
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
+
+            } catch (e) {
+                console.error("Export failed", e);
+            }
+
+            canvas.width = originalWidth;
+            canvas.height = originalHeight;
+            gl.viewport(0, 0, originalWidth, originalHeight);
+        }
+
+        menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMenu();
+        });
+
+        settingsPanel.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+        });
+
+        document.addEventListener('click', () => {
+            if (menuOpen) {
+                closeMenu();
+            } else {
+                triggerRandomization();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeMenu();
+        });
+
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', updateStateFromUI);
+        });
+
+        document.getElementById('btn-randomize').addEventListener('click', (e) => {
+            triggerRandomization();
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', resetToDefaults);
+        document.getElementById('btn-export').addEventListener('click', exportWallpaper);
+
+        triggerRandomization(); 
+        requestAnimationFrame(render);
+
+    </script>
+</body>
+</html>
